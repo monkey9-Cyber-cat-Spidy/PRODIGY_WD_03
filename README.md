@@ -1,6 +1,6 @@
 # Tic-Tac-Toe 🕹️
 
-A dynamic Tic-Tac-Toe game that allows you to choose between **Multiplayer** or **AI vs Player** modes, pick your symbol (**X** or **O**), and enjoy smooth GSAP animations. Have fun competing with friends or testing your skills against an AI opponent. 🎉
+This is a Internship project for Prodigy Infotech. A dynamic Tic-Tac-Toe game that allows you to choose between **Multiplayer** or **AI vs Player** modes, pick your symbol (**X** or **O**), and enjoy smooth GSAP animations. Have fun competing with friends or testing your skills against an AI opponent. 🎉
 
 ## Live Demo 🌐
 
