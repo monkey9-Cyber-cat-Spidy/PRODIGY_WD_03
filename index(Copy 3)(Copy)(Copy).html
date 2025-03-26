@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tic-Tac-Toe - Multiplayer or AI</title>
+  <!-- GSAP (CDN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom right, #e4f1fe, #fefcea);
+    }
+
+    /* Container that centers everything */
+    #appContainer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      width: 100%;
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #333;
+      text-align: center;
+      font-size: 2rem; /* Larger heading for mobile */
+    }
+
+    /* Common panel styling */
+    .panel {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      /* Increase default width for bigger display */
+      width: 400px;
+      max-width: 90%;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    /* Setup Menu */
+    #setupContainer label {
+      display: block;
+      margin: 15px 0 5px;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+    .radio-group {
+      margin-bottom: 15px;
+    }
+    .radio-group label {
+      display: inline-block;
+      margin-right: 10px;
+      font-weight: normal;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    #startBtn {
+      padding: 12px 24px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #7ed321;
+      color: #fff;
+      transition: background-color 0.3s;
+      margin-top: 10px;
+    }
+    #startBtn:hover {
+      background-color: #6cb81b;
+    }
+
+    /* Game Container */
+    #gameContainer {
+      display: none; /* hidden until Start is clicked */
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Make the board larger by default */
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 120px);
+      grid-template-rows: repeat(3, 120px);
+      gap: 5px;
+      margin-top: 20px;
+    }
+
+    .cell {
+      width: 120px;
+      height: 120px;
+      background-color: #fff;
+      border: 2px solid #444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .cell:hover {
+      background-color: #e3e3e3;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 1.3rem;
+      color: #444;
+    }
+
+    /* Buttons */
+    #gameButtons {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+      gap: 10px;
+    }
+    #resetBtn, #backBtn {
+      padding: 12px 24px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #7ed321;
+      color: #fff;
+      transition: background-color 0.3s;
+    }
+    #resetBtn:hover, #backBtn:hover {
+      background-color: #6cb81b;
+    }
+
+    /* 
+      Responsive tweak:
+      - On smaller screens (up to 480px wide),
+        shrink the cells slightly so they fit better.
+      - Also enlarge the font for the headings if desired.
+    */
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.8rem;
+      }
+      .panel {
+        width: 95%;
+      }
+      #board {
+        grid-template-columns: repeat(3, 100px);
+        grid-template-rows: repeat(3, 100px);
+      }
+      .cell {
+        width: 100px;
+        height: 100px;
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="appContainer">
+    <h1>Tic-Tac-Toe</h1>
+
+    <!-- Setup Menu -->
+    <div id="setupContainer" class="panel">
+      <label>Game Mode:</label>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="mode" value="multiplayer" checked>
+          Multiplayer
+        </label>
+        <label>
+          <input type="radio" name="mode" value="ai">
+          AI vs Player
+        </label>
+      </div>
+
+      <label>Choose Your Symbol:</label>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="symbol" value="X" checked>
+          X
+        </label>
+        <label>
+          <input type="radio" name="symbol" value="O">
+          O
+        </label>
+      </div>
+
+      <button id="startBtn">Start Game</button>
+    </div>
+
+    <!-- Game Board & Status -->
+    <div id="gameContainer" class="panel">
+      <div id="board"></div>
+      <div id="status"></div>
+      <div id="gameButtons">
+        <button id="resetBtn">Reset Game</button>
+        <button id="backBtn">Back to Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ------------------------------------------------
+    // Global Variables
+    // ------------------------------------------------
+    let boardState = Array(9).fill(null);
+    let gameActive = true;       // Is game ongoing?
+    let currentPlayer = 'X';     // Whose turn is it? (Changes during game)
+    let userSymbol = 'X';        // User-chosen symbol
+    let aiSymbol = 'O';          // Opponent symbol in AI mode
+    let mode = 'multiplayer';    // "multiplayer" or "ai"
+
+    const boardElement  = document.getElementById('board');
+    const statusElement = document.getElementById('status');
+    const resetBtn      = document.getElementById('resetBtn');
+    const startBtn      = document.getElementById('startBtn');
+    const backBtn       = document.getElementById('backBtn');
+
+    const setupContainer = document.getElementById('setupContainer');
+    const gameContainer  = document.getElementById('gameContainer');
+
+    // ------------------------------------------------
+    // Create Board
+    // ------------------------------------------------
+    function createBoard() {
+      boardElement.innerHTML = '';
+      boardState.forEach((_, index) => {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.setAttribute('data-index', index);
+        cell.addEventListener('click', handleCellClick);
+        boardElement.appendChild(cell);
+      });
+    }
+
+    // ------------------------------------------------
+    // GSAP Utility for "Error" Animations
+    // ------------------------------------------------
+    function shakeElement(element) {
+      gsap.fromTo(
+        element,
+        { x: -5 },
+        {
+          x: 5,
+          duration: 0.1,
+          repeat: 3,
+          yoyo: true,
+          onComplete: () => gsap.set(element, { x: 0 })
+        }
+      );
+    }
+
+    // ------------------------------------------------
+    // Check for Win
+    // ------------------------------------------------
+    function checkWin() {
+      const winningConditions = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6],
+      ];
+
+      for (let condition of winningConditions) {
+        const [a, b, c] = condition;
+        if (
+          boardState[a] &&
+          boardState[a] === boardState[b] &&
+          boardState[a] === boardState[c]
+        ) {
+          return { winner: boardState[a], cells: condition };
+        }
+      }
+      return null;
+    }
+
+    // ------------------------------------------------
+    // Check for Draw
+    // ------------------------------------------------
+    function isDraw() {
+      return !boardState.includes(null);
+    }
+
+    // ------------------------------------------------
+    // End Game
+    // ------------------------------------------------
+    function endGame(winner, winningCells) {
+      gameActive = false;
+      if (winner) {
+        statusElement.textContent = `Player ${winner} Wins!`;
+        highlightWinningCells(winningCells);
+      } else {
+        statusElement.textContent = `It's a Draw!`;
+      }
+    }
+
+    // ------------------------------------------------
+    // Highlight Winning Cells with GSAP
+    // ------------------------------------------------
+    function highlightWinningCells(cells) {
+      cells.forEach(index => {
+        const cell = boardElement.querySelector(`[data-index='${index}']`);
+        gsap.to(cell, {
+          backgroundColor: '#8ef57f',
+          duration: 0.5,
+          repeat: 3,
+          yoyo: true
+        });
+      });
+    }
+
+    // ------------------------------------------------
+    // Handle Cell Click
+    // ------------------------------------------------
+    function handleCellClick(e) {
+      try {
+        if (!gameActive) {
+          throw new Error('Game is already over. Reset to play again!');
+        }
+
+        const index = e.target.getAttribute('data-index');
+        if (boardState[index]) {
+          throw new Error('This cell is already occupied!');
+        }
+
+        // Place mark for current player
+        boardState[index] = currentPlayer;
+        e.target.textContent = currentPlayer;
+
+        // Check win/draw
+        const result = checkWin();
+        if (result) {
+          endGame(result.winner, result.cells);
+          return;
+        }
+        if (isDraw()) {
+          endGame(null, null);
+          return;
+        }
+
+        // If multiplayer, just switch players
+        if (mode === 'multiplayer') {
+          currentPlayer = (currentPlayer === 'X') ? 'O' : 'X';
+          statusElement.textContent = `Current Player: ${currentPlayer}`;
+        }
+        else {
+          // AI mode
+          if (currentPlayer === userSymbol) {
+            // Just placed user move; now AI moves
+            currentPlayer = aiSymbol;
+            statusElement.textContent = `Current Player: ${aiSymbol}`;
+            setTimeout(() => {
+              makeAIMove();
+            }, 500);
+          }
+        }
+
+      } catch (error) {
+        shakeElement(e.target);
+        console.error('Error:', error.message);
+      }
+    }
+
+    // ------------------------------------------------
+    // Basic AI: Picks a random empty cell
+    // ------------------------------------------------
+    function makeAIMove() {
+      try {
+        if (!gameActive) return; // If game ended during delay, exit
+
+        const emptyCells = boardState
+          .map((val, idx) => (val === null ? idx : null))
+          .filter((val) => val !== null);
+
+        if (emptyCells.length === 0) {
+          // Should be a draw at this point
+          endGame(null, null);
+          return;
+        }
+
+        // Random choice
+        const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        boardState[randomIndex] = aiSymbol;
+
+        // Update the board visually
+        const cell = boardElement.querySelector(`[data-index='${randomIndex}']`);
+        cell.textContent = aiSymbol;
+
+        // Check for winner/draw
+        const result = checkWin();
+        if (result) {
+          endGame(result.winner, result.cells);
+          return;
+        }
+        if (isDraw()) {
+          endGame(null, null);
+          return;
+        }
+
+        // Switch back to user
+        currentPlayer = userSymbol;
+        statusElement.textContent = `Current Player: ${userSymbol}`;
+      } catch (error) {
+        console.error('AI Error:', error.message);
+      }
+    }
+
+    // ------------------------------------------------
+    // Reset Game
+    // ------------------------------------------------
+    function resetGame() {
+      boardState = Array(9).fill(null);
+      gameActive = true;
+      currentPlayer = 'X';
+      statusElement.textContent = `Current Player: ${currentPlayer}`;
+      createBoard();
+
+      // If in AI mode and user chose 'O', AI starts
+      if (mode === 'ai' && userSymbol === 'O') {
+        currentPlayer = aiSymbol;
+        statusElement.textContent = `Current Player: ${aiSymbol}`;
+        setTimeout(() => {
+          makeAIMove();
+        }, 500);
+      }
+    }
+
+    // ------------------------------------------------
+    // Start Game
+    // ------------------------------------------------
+    function startGame() {
+      // Read selected mode
+      const modeRadios = document.getElementsByName('mode');
+      for (let radio of modeRadios) {
+        if (radio.checked) {
+          mode = radio.value;
+          break;
+        }
+      }
+
+      // Read chosen symbol
+      const symbolRadios = document.getElementsByName('symbol');
+      for (let radio of symbolRadios) {
+        if (radio.checked) {
+          userSymbol = radio.value;
+          break;
+        }
+      }
+
+      // AI symbol is the opposite
+      aiSymbol = (userSymbol === 'X') ? 'O' : 'X';
+
+      // If user is O in AI mode, AI goes first
+      currentPlayer = 'X'; // default
+      if (mode === 'ai' && userSymbol === 'O') {
+        currentPlayer = aiSymbol;
+      }
+
+      // Hide setup, show game
+      setupContainer.style.display = 'none';
+      gameContainer.style.display = 'flex';
+
+      // Initialize
+      resetGame();
+    }
+
+    // ------------------------------------------------
+    // Go Back to Main Menu
+    // ------------------------------------------------
+    function backToMenu() {
+      // Hide game, show setup
+      gameContainer.style.display = 'none';
+      setupContainer.style.display = 'block';
+      // Clear board state so if user re-starts, it is fresh
+      boardElement.innerHTML = '';
+    }
+
+    // ------------------------------------------------
+    // Event Listeners
+    // ------------------------------------------------
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', resetGame);
+    backBtn.addEventListener('click', backToMenu);
+
+    // The board is only created when the user clicks "Start Game"
+    // so that their chosen mode & symbol can be respected.
+  </script>
+</body>
+</html>
