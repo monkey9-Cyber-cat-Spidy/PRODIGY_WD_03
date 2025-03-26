@@ -34,7 +34,6 @@ Feel free to fork this project, add features, or enhance the design. Pull reques
 
 ## 📬 Contact
 
-💼 **LinkedIn**: [KVS Manikanta](https://www.linkedin.com/in/kvsmanikanta)  
-📧 **Email**: mk1343093@gmail.com  
+💼 **LinkedIn**: [KVS Manikanta](https://www.linkedin.com/in/kvsmanikanta)    
 
 👨‍💻 Developed with ❤️ by **KVS Manikanta**
